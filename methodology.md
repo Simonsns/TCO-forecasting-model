@@ -131,6 +131,6 @@ At the output of the model, time trajectories of total ownership costs for the v
 - The 95% dispersion interval (i.e. 95% of simulations are included in the interval);
 - A narrow 95% confidence interval (±0.5%), because the high number of simulations means that the estimate of the expectation is very close to the theoretical value.
 
-![](tco_illustration/EXEMPLE.png "Example of trajectories (french)").
+![](tco_illustration/Example.png "Example of trajectories (french)").
 
 Here is an illustration of a model output, produced in Excel after extraction of the data table. The use of Excel was preferred for better externalization.
