@@ -84,7 +84,7 @@ Throughout the rest of the study, we'll consider that only the price of the main
 
 The first part consists of constructing truck acquisition costs. Fossil engines are stable over time, with an increase of 0.5% per year until 2040, modeling the automotive industry's transition to low-carbon alternatives. In parallel, low-carbon alternatives prices are different according to litterature (Basma, ICCT, 2023). We took Basma's literature review and the extreme values of the studies, then constructed a Gaussian of parameters ($\mu, \sigma^2$) centered on the mean of the studies, which is most often the half-distance of the extreme values. Thus :
 
-$$ (a, b) \in \R ,\ a< b, \ \mu = \frac{a+b}{2} $$
+$$ (a, b) \in \mathbb{R} ,\ a< b, \ \mu = \frac{a+b}{2} $$
 $$ \sigma = \frac{b-a}{4} $$
 
 95.4% of values are included in the range $[\mu-2\sigma, \mu + 2\sigma]$.
