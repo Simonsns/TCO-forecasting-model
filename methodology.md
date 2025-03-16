@@ -19,9 +19,9 @@ In the remainder of this study, we will look at the following alternative powert
 ## 3. Breakdown of truck fleet into 8 categories
 
 Here, road haulage is broken down into 6 families of heavy vehicles: these are known as vehicle types. These vehicle types are used to distinguish the different technical and usage characteristics of heavy-duty vehicles. They include
-- light commercial vehicles (LCVs) =< 3.5 tonnes ;
+- light commercial vehicles (LCVs) =< 3.5 tonnes;
 - rigids under 7.5 tonnes;
-- rigids in the range ]7.5t, 12t] ;
+- rigids in the range ]7.5t, 12t];
 - rigids in the range ]12t, 16t];
 - carriers in the interval ]16t, 19t];
 - carriers in the interval ]19t, 26t];
@@ -47,3 +47,90 @@ Biofuels are a low-cost alternative to diesel, as they greatly reduce CO2 emissi
 |     Diesel               |     1                   |     1                   |     1                     |
 |     B100/HVO             |     1                   |     1,10                |     1                     |
 |     CNG/BioCNG          |     1,20                |     1,50                |     1,30                  |
+
+## 5. Study of the acquisition cost of green engines
+
+The introduction of new vehicles on the market implies a new technological structure, either with the addition of a battery for energy storage on trucks, or with the H2 fuel tank for H2 trucks. It's worth noting that a significant proportion of costs (according to tonnage class) come from auxiliary components. They include innovative technologies such as electrical system cooling, as well as equipment such as air conditioning systems (Basma, Ricardo Consulting, T&E, Hunter).
+
+### Battery Electric Vehicle (BEV)
+
+We can describe the vehicle structure as follows :
+
+|     Main components (BEV)    |     Technical specifications                                                                        |
+|------------------------------------|--------------------------------------------------------------------------------------------------|
+|     **Battery (pack)**                |     Energy storage                                                        |
+|     **Electric drive**      |     Propulsion system of the vehicle      |
+|     Glider                        |     Assembly designed to support the mechanism, wheels, suspension and body.    |
+|     Auxiliary components         |     Other components   (Cooling system, ventilation...)                             |
+|     Indirects costs                |      Costs not directly related to vehicle production (R&D, advertising, margins, etc.)          |
+
+Similarly, for hydrogen-powered truck :
+
+| Main components (FCEV) | Technical specifications |
+|-------------------------------------|--------------------------------------------------------------------------------------------------|
+**H2 tank** | Propulsion energy storage 
+| **Fuel cell** | Electrochemical generator producing electrical voltage by degradation of H2.
+| **Battery (power)** | Battery to deliver higher voltage.
+| **Electric drive** | Vehicle propulsion system  | Assembly
+| Glider| Assembly designed to support the mechanism, wheels, suspension and body.
+| Auxiliary components | Other components (air conditioning, cooling system, etc.) | Indirect costs
+| Indirect costs | Costs not directly related to vehicle manufacturing (R&D, advertising, margins, etc.) |
+
+Throughout the rest of the study, we'll consider that only the price of the main components (in bold and blue) evolves over time, for the sake of simplifying the modeling.
+
+## Construction of the monte carlo simulation
+
+### Acquisition cost construction
+
+The first part consists of constructing truck acquisition costs. Fossil engines are stable over time, with an increase of 0.5% per year until 2040, modeling the automotive industry's transition to low-carbon alternatives. In parallel, low-carbon alternatives prices are different according to litterature (Basma, ICCT, 2023). We took Basma's literature review and the extreme values of the studies, then constructed a Gaussian of parameters ($\mu, \sigma^2$) centered on the mean of the studies, which is most often the half-distance of the extreme values. Thus :
+
+$$ (a, b) \in \R ,\ a< b, \ \mu = \frac{a+b}{2} $$
+$$ \sigma = \frac{b-a}{4} $$
+
+95.4% of values are included in the range $[\mu-2\sigma, \mu + 2\sigma]$.
+
+To construct the Monte Carlo simulations over the time, we randomly draw a prize of each component each year and add it up to form the acquisition cost.
+Each year is thus fitted with a Gaussian centered around the average acquisition price. 
+
+Here's an illustration of the Gaussians produced at the output of the acquisition price calculation module (random assumptions, not consistent with current industrial reality).
+
+![](tco_illustration/cost_illustration.png "Acquisition costs (french)").
+
+
+### Energy prices scenarios
+
+Previous work carried out for the “Decarbonization of Heavy Goods Vehicles” Article 301 Roadmap assumed fixed energy price trajectories, which did not capture the volatility of energy markets, in particular the cost of diesel fuel and electricity. Two possible scenarios were therefore introduced: 
+- a first scenario is based on a Monte-Carlo draw of an energy trajectory by an ARIMA model, based on annual long-term trends in energy, gas and oil prices. The other fuels (biofuels, vegetable oils, hydrogen) are scenarioized using the second method.
+
+![](tco_illustration/log_price_arima.png "ARIMA Electricity trajectory (french)").
+
+- The second method of scenario creation involves taking the energy trajectory of the “Stratégie Nationale bas Carbone (SNBC)” as the base trajectory, and introducing a variable annual growth rate according to a normal distribution (Gaussian centered around the SNBC trajectory) to simulate a price trajectory up to 2050. 
+
+![](tco_illustration/simulation_trajectoire_prix_electricite.png "Electricity trajectory (french)").
+
+
+### Total cost of ownership calculation
+
+Once n simulations of acquisition and energy cost trajectories had been produced (n = 2000 in our case), the most time-efficient way was to produce 4-dimensional tensors of the form np.ndarray (9, 7, 41, 2000) such that:
+
+- The first dimension represents the heavy vehicle (according to the categories proposed in part 3);
+- The second dimension represents the fuel used by the vehicle (according to the fuels in part 2.);
+- The third dimension is the years (2020 -> 2061 to calculate discounted costs up to 2050);
+- The 4th dimension represents the Monte-Carlo simulation. 
+
+![](tco_illustration/parallelogram.png "Hyperplan of vehicle parameters (n=3) + simulations dimension (french)").
+
+In this way, we can easily diffuse calculations of discounted fuel consumption, maintenance, various aids and so on via broadcasting using the **Numpy** library. What's more, for larger simulation sets (n > 20,000) or sensitivity tests, we've accelerated the computational parts by using the **Numba** library. This library can be used to compile static Python code (written with Numpy) in C++ to take advantage of the computational speed of this low-level language.
+
+### Illustration of a model output
+
+At the output of the model, time trajectories of total ownership costs for the vehicle studied according to each fuel type can be extracted with several usual indicators:
+
+- Simulation mean and median;
+- First and third quartile;
+- The 95% dispersion interval (i.e. 95% of simulations are included in the interval);
+- A narrow 95% confidence interval (±0.5%), because the high number of simulations means that the estimate of the expectation is very close to the theoretical value.
+
+![](tco_illustration/EXEMPLE.png "Example of trajectories (french)").
+
+Here is an illustration of a model output, produced in Excel after extraction of the data table. The use of Excel was preferred for better externalization.
